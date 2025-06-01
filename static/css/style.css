@@ -15,18 +15,21 @@ body {
 }
 
 .logo {
-  width: 50px;
+  width: 75px;
   margin-right: 15px;
 }
 
 .header-text h1 {
   margin: 0;
 }
-
 .terminal-container {
-  height: calc(100vh - 80px);
-  padding: 10px;
+  height: calc(100vh - 120px); /* accounts for header + toggle */
   background-color: #000;
+  color: #0f0;
+  padding: 10px;
+  overflow-y: auto;
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
 }
 
 .logout {
