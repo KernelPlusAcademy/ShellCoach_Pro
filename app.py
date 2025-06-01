@@ -1,7 +1,6 @@
-
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from openai import OpenAI
+import openai
 import os
 
 app = Flask(__name__)
@@ -10,7 +9,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db = SQLAlchemy(app)
 
 # Initialize OpenAI client with API key from environment variable
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -67,21 +66,18 @@ def dashboard():
 def execute():
     command = request.form['command']
     explanation = get_command_explanation(command)
-    return {'output': f"Simulated output for: {command}", 'explanation': explanation}
+    return jsonify({'output': f"Simulated output for: {command}", 'explanation': explanation})
 
-# New OpenAI-compatible explanation function
 def get_command_explanation(command):
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You're a helpful Linux tutor. Explain shell commands clearly."},
                 {"role": "user", "content": f"What does this command do?\n{command}"}
-
-{command}"}
             ]
         )
-        return response.choices[0].message.content.strip()
+        return response.choices[0].message['content'].strip()
     except Exception as e:
         return f"[AI Explanation Error] {str(e)}"
 
