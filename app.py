@@ -119,5 +119,13 @@ def logout():
     session.clear()
     return redirect('/login')
 
+@app.route('/admin/users')
+def admin_users():
+    if 'username' not in session or session['username'] != 'admin':
+        return "Unauthorized", 403
+
+    users = User.query.all()
+    return render_template('admin_users.html', users=users)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
