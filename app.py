@@ -80,6 +80,9 @@ def get_command_explanation(command):
         return response.choices[0].message['content'].strip()
     except Exception as e:
         return f"[AI Explanation Error] {str(e)}"
+        # Ensure database and tables exist
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     with app.app_context():
