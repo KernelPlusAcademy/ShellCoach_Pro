@@ -1,0 +1,26 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ShellCoach Terminal</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+</head>
+<body>
+  <div class="header">
+    <img src="/static/img/logo.png" alt="Kernel+ Academy Logo" class="logo">
+    <div class="header-text">
+      <h1>ShellCoach Terminal</h1>
+      <p>Welcome, {{ username }}</p>
+    </div>
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+  <div class="terminal-toolbar">
+    <label><input type="checkbox" id="ai-toggle" /> Explain commands with AI</label>
+  </div>
+  <div id="terminal" class="terminal-container"></div>
+  <script src="/static/js/terminal.js"></script>
+</body>
+</html>
