@@ -47,7 +47,10 @@
       <tr>
         <td>{{ user.id }}</td>
         <td>{{ user.username }}</td>
-        <td>{{ user.commands_run }}</td>
+        <td>{{ user.commands_run }}</td
+       <td> <a href="/admin/reset_password/{{ user.id }}" style="color:#3b82f6;">Reset</a>
+</td>
+
       </tr>
       {% endfor %}
     </tbody>
