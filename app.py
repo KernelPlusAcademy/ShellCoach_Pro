@@ -56,6 +56,8 @@ def register():
 def dashboard():
     if 'username' not in session:
         return redirect('/login')
+    return render_template('dashboard.html', username=session['username'])
+
 
 @app.route('/run', methods=['POST'])
 def run_command():
