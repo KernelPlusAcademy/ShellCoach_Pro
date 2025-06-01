@@ -127,5 +127,22 @@ def admin_users():
     users = User.query.all()
     return render_template('admin_users.html', users=users)
 
+from werkzeug.security import generate_password_hash
+
+@app.route('/admin/reset_password/<int:user_id>', methods=['GET', 'POST'])
+def reset_password(user_id):
+    if 'username' not in session or session['username'] != 'admin':
+        return "Unauthorized", 403
+
+    user = User.query.get(user_id)
+    if request.method == 'POST':
+        new_password = request.form['password']
+        user.password = generate_password_hash(new_password)
+        db.session.commit()
+        return redirect('/admin/users')
+
+    return render_template('reset_password.html', user=user)
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
