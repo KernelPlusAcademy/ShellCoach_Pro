@@ -3,3 +3,4 @@ openai
 python-dotenv
 gunicorn
 flask_sqlalchemy
+openai>=1.0.0
