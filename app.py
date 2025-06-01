@@ -33,6 +33,7 @@ def login():
         user = User.query.filter_by(username=request.form['username']).first()
         if user and check_password_hash(user.password, request.form['password']):
             session['username'] = user.username
+            session['cwd'] = os.getcwd()
             return redirect('/dashboard')
         else:
             error = 'Invalid credentials'
@@ -51,30 +52,46 @@ def register():
             db.session.commit()
             return redirect('/login')
     return render_template('register.html', error=error)
-    
+
 @app.route('/dashboard')
 def dashboard():
     if 'username' not in session:
         return redirect('/login')
     return render_template('dashboard.html', username=session['username'])
 
-
 @app.route('/run', methods=['POST'])
 def run_command():
     if 'username' not in session:
         return jsonify({'output': 'Unauthorized'}), 403
-    command = request.json.get('command')
-    user = User.query.filter_by(username=session['username']).first()
-    user.commands_run += 1
-    db.session.commit()
 
-    try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        output = result.stdout + result.stderr
-    except Exception as e:
-        output = f"Error: {e}"
+    cmd = request.json.get('command')
+    cwd = session.get('cwd', os.getcwd())
 
-    return jsonify({'output': output})
+    if cmd.startswith("cd "):
+        try:
+            path = os.path.abspath(os.path.join(cwd, cmd[3:].strip()))
+            if os.path.isdir(path):
+                session['cwd'] = path
+                return jsonify({'output': ''})
+            else:
+                return jsonify({'output': 'Directory not found'})
+        except Exception as e:
+            return jsonify({'output': str(e)})
+
+    elif cmd.strip() == "pwd":
+        return jsonify({'output': cwd})
+
+    else:
+        try:
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
+            output = result.stdout + result.stderr
+        except Exception as e:
+            output = f"Error: {e}"
+
+        user = User.query.filter_by(username=session['username']).first()
+        user.commands_run += 1
+        db.session.commit()
+        return jsonify({'output': output})
 
 @app.route('/explain', methods=['POST'])
 def explain_command():
