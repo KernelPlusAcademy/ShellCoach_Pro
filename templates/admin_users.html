@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Registered Users | ShellCoach</title>
+  <style>
+    body {
+      background: #0e1117;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 40px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #1f2937;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #374151;
+      text-align: left;
+    }
+    th {
+      background-color: #111827;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .logout {
+      color: #f87171;
+      float: right;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Registered Users <a class="logout" href="/logout">Logout</a></h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Commands Run</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td>{{ user.id }}</td>
+        <td>{{ user.username }}</td>
+        <td>{{ user.commands_run }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
