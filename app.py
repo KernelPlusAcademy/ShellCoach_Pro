@@ -76,7 +76,7 @@ def get_command_explanation(command):
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You're a helpful Linux tutor. Explain shell commands clearly."},
-                {"role": "user", "content": f"What does this command do?
+                {"role": "user", "content": f"What does this command do?\n{command}"}
 
 {command}"}
             ]
