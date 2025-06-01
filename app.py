@@ -1,148 +1,91 @@
 
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session, url_for
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
+from openai import OpenAI
 import os
-import subprocess
-from dotenv import load_dotenv
 
-load_dotenv()
-
-app = Flask(__name__, static_folder='static')
-app.secret_key = 'shellcoach_secret_key'
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db = SQLAlchemy(app)
 
+# Initialize OpenAI client with API key from environment variable
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
-    commands_run = db.Column(db.Integer, default=0)
-
-with app.app_context():
-    db.create_all()
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
 
 @app.route('/')
-def home():
-    return redirect('/login')
+def index():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    error = ''
+    error = None
     if request.method == 'POST':
-        user = User.query.filter_by(username=request.form['username']).first()
-        if user and check_password_hash(user.password, request.form['password']):
-            session['username'] = user.username
-            session['cwd'] = os.getcwd()
-            return redirect('/dashboard')
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username, password=password).first()
+        if user:
+            session['user_id'] = user.id
+            return redirect(url_for('dashboard'))
         else:
-            error = 'Invalid credentials'
+            error = 'Invalid credentials. Please try again.'
     return render_template('login.html', error=error)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    error = ''
+    error = None
     if request.method == 'POST':
-        if User.query.filter_by(username=request.form['username']).first():
-            error = 'Username already exists'
+        username = request.form['username']
+        password = request.form['password']
+        if User.query.filter_by(username=username).first():
+            error = 'Username already exists.'
         else:
-            hashed_pw = generate_password_hash(request.form['password'])
-            new_user = User(username=request.form['username'], password=hashed_pw)
+            new_user = User(username=username, password=password)
             db.session.add(new_user)
             db.session.commit()
-            return redirect('/login')
+            return redirect(url_for('login'))
     return render_template('register.html', error=error)
-
-@app.route('/dashboard')
-def dashboard():
-    if 'username' not in session:
-        return redirect('/login')
-    return render_template('dashboard.html', username=session['username'])
-
-@app.route('/run', methods=['POST'])
-def run_command():
-    if 'username' not in session:
-        return jsonify({'output': 'Unauthorized'}), 403
-
-    cmd = request.json.get('command')
-    cwd = session.get('cwd', os.getcwd())
-
-    if cmd.startswith("cd "):
-        try:
-            path = os.path.abspath(os.path.join(cwd, cmd[3:].strip()))
-            if os.path.isdir(path):
-                session['cwd'] = path
-                return jsonify({'output': ''})
-            else:
-                return jsonify({'output': 'Directory not found'})
-        except Exception as e:
-            return jsonify({'output': str(e)})
-
-    elif cmd.strip() == "pwd":
-        return jsonify({'output': cwd})
-
-    else:
-        try:
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
-            output = result.stdout + result.stderr
-        except Exception as e:
-            output = f"Error: {e}"
-
-        user = User.query.filter_by(username=session['username']).first()
-        user.commands_run += 1
-        db.session.commit()
-        return jsonify({'output': output})
-
-@app.route('/explain', methods=['POST'])
-def explain_command():
-    if 'username' not in session:
-        return jsonify({'explanation': 'Unauthorized'}), 403
-    import openai
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    command = request.json.get('command')
-
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                { "role": "user", "content": f"Explain the Linux command: {command}" }
-            ]
-        )
-        explanation = response.choices[0].message.content.strip()
-    except Exception as e:
-        explanation = f"Error: {e}"
-
-    return jsonify({'explanation': explanation})
 
 @app.route('/logout')
 def logout():
-    session.clear()
-    return redirect('/login')
+    session.pop('user_id', None)
+    return redirect(url_for('login'))
 
-@app.route('/admin/users')
-def admin_users():
-    if 'username' not in session or session['username'] != 'admin':
-        return "Unauthorized", 403
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('dashboard.html')
 
-    users = User.query.all()
-    return render_template('admin_users.html', users=users)
+@app.route('/execute', methods=['POST'])
+def execute():
+    command = request.form['command']
+    explanation = get_command_explanation(command)
+    return {'output': f"Simulated output for: {command}", 'explanation': explanation}
 
-from werkzeug.security import generate_password_hash
+# New OpenAI-compatible explanation function
+def get_command_explanation(command):
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You're a helpful Linux tutor. Explain shell commands clearly."},
+                {"role": "user", "content": f"What does this command do?
 
-@app.route('/admin/reset_password/<int:user_id>', methods=['GET', 'POST'])
-def reset_password(user_id):
-    if 'username' not in session or session['username'] != 'admin':
-        return "Unauthorized", 403
-
-    user = User.query.get(user_id)
-    if request.method == 'POST':
-        new_password = request.form['password']
-        user.password = generate_password_hash(new_password)
-        db.session.commit()
-        return redirect('/admin/users')
-
-    return render_template('reset_password.html', user=user)
-
+{command}"}
+            ]
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"[AI Explanation Error] {str(e)}"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
