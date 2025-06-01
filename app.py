@@ -8,7 +8,7 @@ app.secret_key = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 db = SQLAlchemy(app)
 
-# Initialize OpenAI client with API key from environment variable
+# Correctly assign OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class User(db.Model):
