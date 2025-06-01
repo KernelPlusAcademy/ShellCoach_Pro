@@ -51,7 +51,7 @@ def register():
             db.session.commit()
             return redirect('/login')
     return render_template('register.html', error=error)
-
+    
 @app.route('/dashboard')
 def dashboard():
     if 'username' not in session:
